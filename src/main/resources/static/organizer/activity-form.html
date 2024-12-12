@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>活动表单</title>
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .submit {
+            background: #67C23A;
+            color: white;
+        }
+        .cancel {
+            background: #909399;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2 id="formTitle">创建活动</h2>
+        <form id="activityForm">
+            <input type="hidden" id="activityId">
+            <div class="form-group">
+                <label>活动名称</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>活动描述</label>
+                <textarea class="form-control" id="description" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>活动地点</label>
+                <input type="text" class="form-control" id="location" required>
+            </div>
+            <div class="form-group">
+                <label>开始时间</label>
+                <input type="datetime-local" class="form-control" id="startTime" required>
+            </div>
+            <div class="form-group">
+                <label>结束时间</label>
+                <input type="datetime-local" class="form-control" id="endTime" required>
+            </div>
+            <div class="form-group">
+                <label>最大参与人数</label>
+                <input type="number" class="form-control" id="maxParticipants" min="1" required>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="button submit">保存</button>
+                <button type="button" class="button cancel" onclick="location.href='index.html'">取消</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const activityId = urlParams.get('id');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (activityId) {
+            document.getElementById('formTitle').textContent = '编辑活动';
+            loadActivity(activityId);
+        }
+
+        async function loadActivity(id) {
+            try {
+                const response = await fetch(`/api/organizer/activities/${id}`);
+                const activity = await response.json();
+                
+                document.getElementById('activityId').value = activity.id;
+                document.getElementById('title').value = activity.title;
+                document.getElementById('description').value = activity.description;
+                document.getElementById('location').value = activity.location;
+                document.getElementById('startTime').value = activity.startTime.slice(0, 16);
+                document.getElementById('endTime').value = activity.endTime.slice(0, 16);
+                document.getElementById('maxParticipants').value = activity.maxParticipants;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载活动详情失败');
+            }
+        }
+
+        document.getElementById('activityForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const activity = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                location: document.getElementById('location').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                maxParticipants: document.getElementById('maxParticipants').value,
+                organizerId: user.id
+            };
+            
+            const id = document.getElementById('activityId').value;
+            
+            try {
+                const response = await fetch(`/api/organizer/activities${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(activity)
+                });
+                
+                if (response.ok) {
+                    alert('保存成功');
+                    location.href = 'index.html';
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败');
+            }
+        });
+    </script>
+</body>
+</html> 
