@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>活动审核</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .approve {
+            background: #67C23A;
+            color: white;
+        }
+        .reject {
+            background: #F56C6C;
+            color: white;
+        }
+        .detail-row {
+            background: #fafafa;
+            padding: 20px;
+            display: none;
+        }
+        .detail-row.show {
+            display: table-row;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #909399;
+            font-size: 14px;
+            margin-top: 40px;
+            border-top: 1px solid #EBEEF5;
+        }
+        
+        .footer a {
+            color: #409EFF;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>活动审核</h2>
+        <div id="userInfo"></div>
+    </div>
+    <div class="filter">
+        <select id="statusFilter" onchange="loadActivities()">
+            <option value="PENDING">待审核</option>
+            <option value="APPROVED">已通过</option>
+            <option value="REJECTED">已拒绝</option>
+            <option value="ALL">全部</option>
+        </select>
+        <button class="button" onclick="logout()">退出登录</button>
+    </div>
+    <div id="activityList"></div>
+
+    <div class="footer">
+        <p>Created by 范家瑞/Felix-Fan</p>
+        <p>© 2024 环保公益活动管理系统. All rights reserved.</p>
+    </div>
+
+    <script>
+        // 检查登录状态
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== 'ADMIN') {
+            location.href = '/login.html';
+        }
+
+        // 显示用户信息
+        document.getElementById('userInfo').textContent = `当前用户：${user.username}`;
+
+        // 活动状态格式化
+        function formatActivityStatus(status) {
+            const statusMap = {
+                'DRAFT': '<span style="color: #909399;">草稿</span>',
+                'PENDING': '<span style="color: #E6A23C;">待审核</span>',
+                'APPROVED': '<span style="color: #67C23A;">已通过</span>',
+                'REJECTED': '<span style="color: #F56C6C;">已拒绝</span>',
+                'ONGOING': '<span style="color: #409EFF;">进行中</span>',
+                'FINISHED': '<span style="color: #909399;">已结束</span>',
+                'CANCELLED': '<span style="color: #F56C6C;">已取消</span>'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 加载活动列表
+        async function loadActivities() {
+            try {
+                const status = document.getElementById('statusFilter').value;
+                const response = await fetch(`/api/admin/activities?status=${status}`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || '加载活动列表失败');
+                }
+                const activities = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>活动名称</th>
+                                <th>组织者</th>
+                                <th>时间</th>
+                                <th>地点</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${activities.length === 0 ? `
+                                <tr><td colspan="6" style="text-align: center;">暂无活动</td></tr>
+                            ` : activities.map(activity => `
+                                <tr>
+                                    <td>${activity.title}</td>
+                                    <td>${activity.organizer ? activity.organizer.username : '未知'}</td>
+                                    <td>
+                                        <div>开始：${new Date(activity.startTime).toLocaleString()}</div>
+                                        <div>结束：${new Date(activity.endTime).toLocaleString()}</div>
+                                    </td>
+                                    <td>${activity.location}</td>
+                                    <td>${formatActivityStatus(activity.status)}</td>
+                                    <td>
+                                        ${activity.status === 'PENDING' ? `
+                                            <button class="button approve" onclick="approveActivity(${activity.id})">通过</button>
+                                            <button class="button reject" onclick="rejectActivity(${activity.id})">拒绝</button>
+                                        ` : ''}
+                                        <button class="button" onclick="toggleDetail(${activity.id})">详情</button>
+                                    </td>
+                                </tr>
+                                <tr id="detail-${activity.id}" class="detail-row">
+                                    <td colspan="6">
+                                        <h3>活动详情</h3>
+                                        <p><strong>活动描述：</strong>${activity.description}</p>
+                                        <p><strong>参与人数：</strong>${activity.currentParticipants}/${activity.maxParticipants}</p>
+                                        <p><strong>创建时间：</strong>${new Date(activity.createTime).toLocaleString()}</p>
+                                        ${activity.status === 'REJECTED' ? `
+                                            <p><strong>拒绝原因：</strong>${activity.rejectReason || '无'}</p>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('activityList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('activityList').innerHTML = `
+                    <div style="text-align: center; color: #F56C6C; padding: 20px;">
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 初始加载活动列表
+        loadActivities();
+
+        // 添加退出登录函数
+        function logout() {
+            localStorage.removeItem('user');
+            location.href = '/login.html';
+        }
+
+        async function updateActivityStatus(activityId, status, reason = '') {
+            try {
+                const response = await fetch(`/api/admin/activities/${activityId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status, reason })
+                });
+                
+                if (response.ok) {
+                    alert('操作成功');
+                    loadActivities();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '操作失败');
+                }
+            } catch (error) {
+                alert('操作失败');
+            }
+        }
+
+        function approveActivity(activityId) {
+            updateActivityStatus(activityId, 'APPROVED');
+        }
+
+        function rejectActivity(activityId) {
+            const reason = prompt('请输入拒绝原因：');
+            if (reason !== null) {
+                updateActivityStatus(activityId, 'REJECTED', reason);
+            }
+        }
+
+        function toggleDetail(activityId) {
+            const detailRow = document.getElementById(`detail-${activityId}`);
+            detailRow.classList.toggle('show');
+        }
+    </script>
+</body>
+</html> 
