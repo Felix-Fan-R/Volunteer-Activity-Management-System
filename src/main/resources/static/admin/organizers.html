@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>组织者管理</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .approve {
+            background: #67C23A;
+            color: white;
+        }
+        .reject {
+            background: #F56C6C;
+            color: white;
+        }
+        .disable {
+            background: #909399;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h2>组织者管理</h2>
+    <div id="organizerList"></div>
+
+    <script>
+        async function loadOrganizers() {
+            try {
+                const response = await fetch('/api/admin/organizers');
+                const organizers = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>注册时间</th>
+                                <th>状态</th>
+                                <th>活动数量</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${organizers.map(organizer => `
+                                <tr>
+                                    <td>${organizer.username}</td>
+                                    <td>${new Date(organizer.createTime).toLocaleString()}</td>
+                                    <td>${organizer.status}</td>
+                                    <td>${organizer.activityCount || 0}</td>
+                                    <td>
+                                        ${organizer.status === 'PENDING' ? `
+                                            <button class="button approve" onclick="approveOrganizer(${organizer.id})">通过</button>
+                                            <button class="button reject" onclick="rejectOrganizer(${organizer.id})">拒绝</button>
+                                        ` : organizer.status === 'ACTIVE' ? `
+                                            <button class="button disable" onclick="disableOrganizer(${organizer.id})">禁用</button>
+                                        ` : `
+                                            <button class="button approve" onclick="enableOrganizer(${organizer.id})">启用</button>
+                                        `}
+                                        <button class="button" onclick="viewActivities(${organizer.id})">查看活动</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('organizerList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载组织者列表失败');
+            }
+        }
+
+        async function updateOrganizerStatus(organizerId, status) {
+            try {
+                const response = await fetch(`/api/admin/organizers/${organizerId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    alert('操作成功');
+                    loadOrganizers();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '操作失败');
+                }
+            } catch (error) {
+                alert('操作失败');
+            }
+        }
+
+        function approveOrganizer(organizerId) {
+            updateOrganizerStatus(organizerId, 'ACTIVE');
+        }
+
+        function rejectOrganizer(organizerId) {
+            updateOrganizerStatus(organizerId, 'REJECTED');
+        }
+
+        function disableOrganizer(organizerId) {
+            updateOrganizerStatus(organizerId, 'DISABLED');
+        }
+
+        function enableOrganizer(organizerId) {
+            updateOrganizerStatus(organizerId, 'ACTIVE');
+        }
+
+        function viewActivities(organizerId) {
+            location.href = `organizer-activities.html?id=${organizerId}`;
+        }
+
+        // 初始加载组织者列表
+        loadOrganizers();
+    </script>
+</body>
+</html> 

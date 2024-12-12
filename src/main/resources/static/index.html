@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>志愿活动管理系统</title>
+    <style>
+        :root {
+            --primary-color: #1abc9c;
+            --secondary-color: #16a085;
+            --text-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 5%;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .hero-section {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 5rem 5%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 600px;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .hero-image {
+            position: absolute;
+            right: -5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50%;
+            max-width: 800px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .features-section {
+            padding: 5rem 5%;
+            background: var(--light-color);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--primary-color);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .feature-description {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .cta-section {
+            padding: 5rem 5%;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .cta-title {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .primary-button {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .primary-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .secondary-button {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            margin-left: 1rem;
+        }
+
+        .secondary-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .footer {
+            background: var(--text-color);
+            color: white;
+            padding: 2rem 5%;
+            text-align: center;
+        }
+
+        .footer p {
+            opacity: 0.8;
+            margin: 0.5rem 0;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(-50%) translateX(0);
+            }
+            50% {
+                transform: translateY(-50%) translateX(-20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-image {
+                display: none;
+            }
+            
+            .hero-content {
+                max-width: 100%;
+                text-align: center;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">志愿活动管理系统</a>
+        <div class="nav-buttons">
+            <a href="login.html" class="button primary-button">登录</a>
+            <a href="register.html" class="button secondary-button">注册</a>
+        </div>
+    </nav>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">让志愿服务成为生活方式</h1>
+            <p class="hero-description">
+                加入我们的志愿服务活动，共同建设美好社会。
+                通过组织和参与各类公益活动，为创造更美好的未来贡献一份力量。
+            </p>
+            <div class="hero-buttons">
+                <button class="button primary-button" onclick="location.href='login.html'">立即开始</button>
+                <button class="button secondary-button" onclick="location.href='register.html'">了解更多</button>
+            </div>
+        </div>
+        <img src="assets/earth.png" alt="Earth" class="hero-image">
+    </section>
+
+    <section class="features-section">
+        <h2 class="section-title">我们的特色</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🌱</div>
+                <h3 class="feature-title">志愿活动</h3>
+                <p class="feature-description">
+                    组织和参与各类志愿服务活动，为社会发展贡献力量。
+                    从社区服务到公益行动，每一份努力都很重要。
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3 class="feature-title">服务社会</h3>
+                <p class="feature-description">
+                    成为志愿者，传播公益理念，影响更多人参与志愿服务。
+                    让志愿精神深入人心。
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3 class="feature-title">共创未来</h3>
+                <p class="feature-description">
+                    携手共创美好未来，建设和谐社会。每个人的参与都是对未来的投资。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2 class="cta-title">准备好加入我们了吗？</h2>
+        <p class="hero-description">立即注册账号，开始你的志愿服务之旅</p>
+        <div class="cta-buttons">
+            <button class="button primary-button" onclick="location.href='login.html'">立即登录</button>
+            <button class="button secondary-button" onclick="location.href='register.html'">注册账号</button>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>Created by 范家瑞/Felix-Fan</p>
+        <p>© 2024 志愿活动管理系统. All rights reserved.</p>
+    </footer>
+</body>
+</html> 

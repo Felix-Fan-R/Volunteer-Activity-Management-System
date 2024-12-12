@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>组织者活动列表</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .back {
+            background: #909399;
+            color: white;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button class="button back" onclick="location.href='organizers.html'">返回组织者列表</button>
+    <h2>组织者活动列表</h2>
+    <div id="activityList"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const organizerId = urlParams.get('id');
+
+        async function loadActivities() {
+            try {
+                const response = await fetch(`/api/admin/organizers/${organizerId}/activities`);
+                const activities = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>活动名称</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                <th>地点</th>
+                                <th>状态</th>
+                                <th>参与人数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${activities.map(activity => `
+                                <tr>
+                                    <td>${activity.title}</td>
+                                    <td>${new Date(activity.startTime).toLocaleString()}</td>
+                                    <td>${new Date(activity.endTime).toLocaleString()}</td>
+                                    <td>${activity.location}</td>
+                                    <td>${activity.status}</td>
+                                    <td>${activity.currentParticipants}/${activity.maxParticipants}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('activityList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载活动列表失败');
+            }
+        }
+
+        // 初始加载活动列表
+        loadActivities();
+    </script>
+</body>
+</html> 

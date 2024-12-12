@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>发起活动</title>
+    <style>
+        .form-container {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button {
+            padding: 10px 20px;
+            background: #409EFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>发起新活动</h2>
+        <form id="activityForm">
+            <div class="form-group">
+                <label>活动名称</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>活动描述</label>
+                <textarea class="form-control" id="description" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>活动地点</label>
+                <input type="text" class="form-control" id="location" required>
+            </div>
+            <div class="form-group">
+                <label>开始时间</label>
+                <input type="datetime-local" class="form-control" id="startTime" required>
+            </div>
+            <div class="form-group">
+                <label>结束时间</label>
+                <input type="datetime-local" class="form-control" id="endTime" required>
+            </div>
+            <div class="form-group">
+                <label>最大参与人数</label>
+                <input type="number" class="form-control" id="maxParticipants" required>
+            </div>
+            <button type="submit" class="button">提交</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('activityForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'ORGANIZER') {
+                location.href = '/login.html';
+                return;
+            }
+
+            const activity = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                location: document.getElementById('location').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                maxParticipants: document.getElementById('maxParticipants').value,
+                organizerId: user.id,
+                status: 'DRAFT'
+            };
+
+            try {
+                const response = await fetch('/api/activities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(activity)
+                });
+                
+                if (response.ok) {
+                    alert('活动创建成功');
+                    location.href = '/organizer/index.html';
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '创建失败');
+                }
+            } catch (error) {
+                alert('创建失败');
+            }
+        });
+    </script>
+</body>
+</html> 

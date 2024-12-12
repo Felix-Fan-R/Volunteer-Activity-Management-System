@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>环保知识管理</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .add {
+            background: #67C23A;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .edit {
+            background: #409EFF;
+            color: white;
+        }
+        .delete {
+            background: #F56C6C;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h2>环保知识管理</h2>
+    <button class="button add" onclick="showAddModal()">添加知识</button>
+    <div id="knowledgeList"></div>
+
+    <!-- 添加/编辑模态框 -->
+    <div id="knowledgeModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">添加环保知识</h3>
+            <form id="knowledgeForm">
+                <input type="hidden" id="knowledgeId">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" class="form-control" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea class="form-control" id="content" rows="10" required></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="button add">保存</button>
+                    <button type="button" class="button delete" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function loadKnowledge() {
+            try {
+                const response = await fetch('/api/admin/knowledge');
+                const knowledge = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>作者</th>
+                                <th>创建时间</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${knowledge.map(item => `
+                                <tr>
+                                    <td>${item.title}</td>
+                                    <td>${item.author.username}</td>
+                                    <td>${new Date(item.createTime).toLocaleString()}</td>
+                                    <td>${new Date(item.updateTime).toLocaleString()}</td>
+                                    <td>
+                                        <button class="button edit" onclick="showEditModal(${item.id})">编辑</button>
+                                        <button class="button delete" onclick="deleteKnowledge(${item.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('knowledgeList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载环保知识列表失败');
+            }
+        }
+
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = '添加环保知识';
+            document.getElementById('knowledgeId').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('knowledgeModal').style.display = 'block';
+        }
+
+        async function showEditModal(id) {
+            try {
+                const response = await fetch(`/api/admin/knowledge/${id}`);
+                const knowledge = await response.json();
+                
+                document.getElementById('modalTitle').textContent = '编辑环保知识';
+                document.getElementById('knowledgeId').value = knowledge.id;
+                document.getElementById('title').value = knowledge.title;
+                document.getElementById('content').value = knowledge.content;
+                document.getElementById('knowledgeModal').style.display = 'block';
+            } catch (error) {
+                alert('加载知识详情失败');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('knowledgeModal').style.display = 'none';
+        }
+
+        document.getElementById('knowledgeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('knowledgeId').value;
+            const knowledge = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value
+            };
+            
+            try {
+                const response = await fetch(`/api/admin/knowledge${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(knowledge)
+                });
+                
+                if (response.ok) {
+                    alert('保存成功');
+                    closeModal();
+                    loadKnowledge();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败');
+            }
+        });
+
+        async function deleteKnowledge(id) {
+            if (!confirm('确定要删除这条环保知识吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/knowledge/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('删除成功');
+                    loadKnowledge();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '删除失败');
+                }
+            } catch (error) {
+                alert('删除失败');
+            }
+        }
+
+        // 初始加载环保知识列表
+        loadKnowledge();
+    </script>
+</body>
+</html> 

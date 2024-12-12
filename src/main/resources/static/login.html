@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录 - 志愿活动管理系统</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1bbc9b 0%, #1abc9c 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 40px;
+        }
+
+        .right-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            box-shadow: -10px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .system-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .system-desc {
+            font-size: 1.2em;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .card-header {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        .form-item {
+            margin-bottom: 25px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dcdfe6;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input:focus {
+            border-color: #1abc9c;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.2);
+        }
+
+        .button {
+            width: 100%;
+            padding: 14px;
+            background: #1abc9c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .button:hover {
+            background: #1bbc9b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .login-footer a {
+            color: #1abc9c;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .login-footer a:hover {
+            color: #1bbc9b;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .back-button:hover {
+            background: white;
+            color: #1abc9c;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        /* 添加动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .system-title, .system-desc {
+            animation: fadeIn 1s ease-out;
+        }
+
+        .login-card {
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">返回首页</a>
+    <div class="container">
+        <div class="left-panel">
+            <h1 class="system-title">志愿活动管理系统</h1>
+            <p class="system-desc">
+                让我们携手共建美好社会，为志愿服务贡献一份力量。
+                通过参与各种志愿服务活动，我们可以共同守护地球，
+                创造更美好的未来。
+            </p>
+        </div>
+        <div class="right-panel">
+            <div class="login-card">
+                <div class="card-header">
+                    <span>用户登录</span>
+                </div>
+                <form id="loginForm">
+                    <div class="form-item">
+                        <input type="text" class="input" id="username" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="form-item">
+                        <input type="password" class="input" id="password" placeholder="请输入密码" required>
+                    </div>
+                    <div class="form-item">
+                        <button type="submit" class="button">登录</button>
+                    </div>
+                </form>
+                <div class="login-footer">
+                    <a href="register.html">还没有账号？立即注册</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>Created by 范家瑞/Felix-Fan</p>
+        <p>© 2024 志愿活动管理系统. All rights reserved.</p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('user', JSON.stringify(data));
+                    
+                    switch(data.role) {
+                        case 'ADMIN':
+                            location.href = '/admin/index.html';
+                            break;
+                        case 'ORGANIZER':
+                            location.href = '/organizer/index.html';
+                            break;
+                        case 'VOLUNTEER':
+                            location.href = '/volunteer/index.html';
+                            break;
+                        default:
+                            alert('未知角色');
+                    }
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '登录失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('登录失败，请检查网络连接');
+            }
+        });
+    </script>
+</body>
+</html> 

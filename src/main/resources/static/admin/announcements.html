@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统公告管理</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .add {
+            background: #67C23A;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .edit {
+            background: #409EFF;
+            color: white;
+        }
+        .delete {
+            background: #F56C6C;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h2>系统公告管理</h2>
+    <button class="button add" onclick="showAddModal()">发布公告</button>
+    <div id="announcementList"></div>
+
+    <!-- 添加/编辑模态框 -->
+    <div id="announcementModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">发布公告</h3>
+            <form id="announcementForm">
+                <input type="hidden" id="announcementId">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" class="form-control" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea class="form-control" id="content" rows="10" required></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="button add">保存</button>
+                    <button type="button" class="button delete" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function loadAnnouncements() {
+            try {
+                const response = await fetch('/api/admin/announcements');
+                const announcements = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>发布者</th>
+                                <th>发布时间</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${announcements.map(item => `
+                                <tr>
+                                    <td>${item.title}</td>
+                                    <td>${item.author.username}</td>
+                                    <td>${new Date(item.createTime).toLocaleString()}</td>
+                                    <td>${new Date(item.updateTime).toLocaleString()}</td>
+                                    <td>
+                                        <button class="button edit" onclick="showEditModal(${item.id})">编辑</button>
+                                        <button class="button delete" onclick="deleteAnnouncement(${item.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('announcementList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载公告列表失败');
+            }
+        }
+
+        function showAddModal() {
+            document.getElementById('modalTitle').textContent = '发布公告';
+            document.getElementById('announcementId').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('announcementModal').style.display = 'block';
+        }
+
+        async function showEditModal(id) {
+            try {
+                const response = await fetch(`/api/admin/announcements/${id}`);
+                const announcement = await response.json();
+                
+                document.getElementById('modalTitle').textContent = '编辑公告';
+                document.getElementById('announcementId').value = announcement.id;
+                document.getElementById('title').value = announcement.title;
+                document.getElementById('content').value = announcement.content;
+                document.getElementById('announcementModal').style.display = 'block';
+            } catch (error) {
+                alert('加载公告详情失败');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('announcementModal').style.display = 'none';
+        }
+
+        document.getElementById('announcementForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('announcementId').value;
+            const announcement = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value
+            };
+            
+            try {
+                const response = await fetch(`/api/admin/announcements${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(announcement)
+                });
+                
+                if (response.ok) {
+                    alert('保存成功');
+                    closeModal();
+                    loadAnnouncements();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败');
+            }
+        });
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('确定要删除这条公告吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/announcements/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('删除成功');
+                    loadAnnouncements();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '删除失败');
+                }
+            } catch (error) {
+                alert('删除失败');
+            }
+        }
+
+        // 初始加载公告列表
+        loadAnnouncements();
+    </script>
+</body>
+</html> 

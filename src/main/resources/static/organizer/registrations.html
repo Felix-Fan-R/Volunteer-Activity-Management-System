@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>报名管理</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .approve {
+            background: #67C23A;
+            color: white;
+        }
+        .reject {
+            background: #F56C6C;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h2>报名管理</h2>
+    <div id="registrationList"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const activityId = urlParams.get('id');
+
+        async function loadRegistrations() {
+            try {
+                const response = await fetch(`/api/organizer/activities/${activityId}/registrations`);
+                const registrations = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>志愿者</th>
+                                <th>报名时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${registrations.map(registration => `
+                                <tr>
+                                    <td>${registration.volunteer.username}</td>
+                                    <td>${new Date(registration.createTime).toLocaleString()}</td>
+                                    <td>${registration.status}</td>
+                                    <td>
+                                        ${registration.status === 'PENDING' ? `
+                                            <button class="button approve" onclick="updateStatus(${registration.id}, 'APPROVED')">通过</button>
+                                            <button class="button reject" onclick="updateStatus(${registration.id}, 'REJECTED')">拒绝</button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('registrationList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载报名列表失败');
+            }
+        }
+
+        async function updateStatus(registrationId, status) {
+            try {
+                const response = await fetch(`/api/organizer/registrations/${registrationId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(status)
+                });
+                
+                if (response.ok) {
+                    alert('操作成功');
+                    loadRegistrations();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '操作失败');
+                }
+            } catch (error) {
+                alert('操作失败');
+            }
+        }
+
+        // 初始加载报名列表
+        loadRegistrations();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>志愿者管理</title>
+    <style>
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid #EBEEF5;
+            text-align: left;
+        }
+        .table th {
+            background: #F5F7FA;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .disable {
+            background: #F56C6C;
+            color: white;
+        }
+        .enable {
+            background: #67C23A;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h2>志愿者管理</h2>
+    <div id="volunteerList"></div>
+
+    <script>
+        async function loadVolunteers() {
+            try {
+                const response = await fetch('/api/admin/volunteers');
+                const volunteers = await response.json();
+                
+                const table = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>注册时间</th>
+                                <th>状态</th>
+                                <th>参与活动数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${volunteers.map(volunteer => `
+                                <tr>
+                                    <td>${volunteer.username}</td>
+                                    <td>${new Date(volunteer.createTime).toLocaleString()}</td>
+                                    <td>${volunteer.status}</td>
+                                    <td>${volunteer.activityCount}</td>
+                                    <td>
+                                        ${volunteer.status === 'ACTIVE' ? 
+                                            `<button class="button disable" onclick="disableVolunteer(${volunteer.id})">禁用</button>` :
+                                            `<button class="button enable" onclick="enableVolunteer(${volunteer.id})">启用</button>`
+                                        }
+                                        <button class="button" onclick="viewActivities(${volunteer.id})">查看活动</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('volunteerList').innerHTML = table;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载志愿者列表失败');
+            }
+        }
+
+        async function updateVolunteerStatus(volunteerId, status) {
+            try {
+                const response = await fetch(`/api/admin/volunteers/${volunteerId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    alert('操作成功');
+                    loadVolunteers();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '操作失败');
+                }
+            } catch (error) {
+                alert('操作失败');
+            }
+        }
+
+        function disableVolunteer(volunteerId) {
+            updateVolunteerStatus(volunteerId, 'DISABLED');
+        }
+
+        function enableVolunteer(volunteerId) {
+            updateVolunteerStatus(volunteerId, 'ACTIVE');
+        }
+
+        function viewActivities(volunteerId) {
+            location.href = `volunteer-activities.html?id=${volunteerId}`;
+        }
+
+        // 初始加载志愿者列表
+        loadVolunteers();
+    </script>
+</body>
+</html> 
