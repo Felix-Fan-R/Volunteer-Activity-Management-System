@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统公告</title>
+    <style>
+        .container {
+            padding: 20px;
+        }
+        .announcement-list {
+            margin-top: 20px;
+        }
+        .announcement-card {
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .announcement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .announcement-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #303133;
+        }
+        .announcement-meta {
+            color: #909399;
+            font-size: 14px;
+        }
+        .announcement-content {
+            color: #606266;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .announcement-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #909399;
+            font-size: 14px;
+        }
+        .top-badge {
+            background: #F56C6C;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #909399;
+            font-size: 14px;
+        }
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            color: #F56C6C;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #409EFF;
+            color: white;
+            margin: 0 5px;
+        }
+        .button:disabled {
+            background: #909399;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="announcement-list" id="announcementList"></div>
+    </div>
+
+    <script>
+        async function loadAnnouncements(page = 0) {
+            try {
+                const response = await fetch(`/api/announcements?page=${page}&size=10&sort=isTop,desc&sort=createTime,desc`, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+
+                const data = await response.json();
+                const announcements = data.content || [];
+                const totalPages = data.totalPages || 1;
+                const currentPage = data.number || 0;
+                const totalElements = data.totalElements || 0;
+
+                if (announcements.length === 0) {
+                    document.getElementById('announcementList').innerHTML = `
+                        <div class="empty-message">暂无公告</div>
+                    `;
+                    return;
+                }
+
+                const html = announcements.map(announcement => `
+                    <div class="announcement-card">
+                        <div class="announcement-header">
+                            <div class="announcement-title">
+                                ${announcement.title}
+                                ${announcement.isTop ? '<span class="top-badge">置顶</span>' : ''}
+                            </div>
+                            <div class="announcement-meta">
+                                发布时间：${new Date(announcement.createTime).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="announcement-content">${announcement.content}</div>
+                        <div class="announcement-footer">
+                            <span>发布者：${announcement.author ? announcement.author.username : '系统'}</span>
+                            <span>更新时间：${new Date(announcement.updateTime).toLocaleString()}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                // 添加分页控件
+                const pagination = `
+                    <div class="pagination">
+                        <button class="button" 
+                            onclick="loadAnnouncements(${currentPage - 1})"
+                            ${currentPage <= 0 ? 'disabled' : ''}>
+                            上一页
+                        </button>
+                        <span style="margin: 0 15px;">
+                            第 ${currentPage + 1}/${totalPages} 页，共 ${totalElements} 条
+                        </span>
+                        <button class="button" 
+                            onclick="loadAnnouncements(${currentPage + 1})"
+                            ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
+                            下一页
+                        </button>
+                    </div>
+                `;
+
+                document.getElementById('announcementList').innerHTML = html + pagination;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('announcementList').innerHTML = `
+                    <div class="error-message">
+                        <div style="margin-bottom: 10px;">加载失败：${error.message}</div>
+                        <button onclick="loadAnnouncements()" class="button">重试</button>
+                    </div>
+                `;
+            }
+        }
+
+        // 初始加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAnnouncements();
+        });
+    </script>
+</body>
+</html> 

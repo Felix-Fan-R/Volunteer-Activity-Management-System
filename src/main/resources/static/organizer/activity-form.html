@@ -4,98 +4,143 @@
     <meta charset="UTF-8">
     <title>活动表单</title>
     <style>
-        .form-container {
-            max-width: 800px;
-            margin: 20px auto;
+        .container {
             padding: 20px;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-        .form-group label {
+        label {
             display: block;
             margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
         }
-        .form-control {
+        input[type="text"],
+        input[type="number"],
+        input[type="datetime-local"],
+        select,
+        textarea {
             width: 100%;
             padding: 8px;
-            border: 1px solid #dcdfe6;
+            border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            margin-top: 5px;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        .button-group {
+            margin-top: 20px;
+            text-align: center;
         }
         .button {
-            padding: 6px 12px;
+            padding: 8px 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             margin: 0 5px;
+            font-weight: bold;
         }
-        .submit {
-            background: #67C23A;
+        .primary {
+            background: #409EFF;
             color: white;
         }
-        .cancel {
+        .default {
             background: #909399;
             color: white;
+        }
+        .error-message {
+            color: #F56C6C;
+            font-size: 14px;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="form-container">
-        <h2 id="formTitle">创建活动</h2>
-        <form id="activityForm">
-            <input type="hidden" id="activityId">
+    <div class="container">
+        <form id="activityForm" onsubmit="return false;">
             <div class="form-group">
-                <label>活动名称</label>
-                <input type="text" class="form-control" id="title" required>
+                <label for="title">活动标题</label>
+                <input type="text" id="title" required>
             </div>
             <div class="form-group">
-                <label>活动描述</label>
-                <textarea class="form-control" id="description" rows="4" required></textarea>
+                <label for="category">活动类别</label>
+                <select id="category" required></select>
             </div>
             <div class="form-group">
-                <label>活动地点</label>
-                <input type="text" class="form-control" id="location" required>
+                <label for="description">活动描述</label>
+                <textarea id="description" required></textarea>
             </div>
             <div class="form-group">
-                <label>开始时间</label>
-                <input type="datetime-local" class="form-control" id="startTime" required>
+                <label for="location">活动地点</label>
+                <input type="text" id="location" required>
             </div>
             <div class="form-group">
-                <label>结束时间</label>
-                <input type="datetime-local" class="form-control" id="endTime" required>
+                <label for="startTime">开始时间</label>
+                <input type="datetime-local" id="startTime" required>
             </div>
             <div class="form-group">
-                <label>最大参与人数</label>
-                <input type="number" class="form-control" id="maxParticipants" min="1" required>
+                <label for="endTime">结束时间</label>
+                <input type="datetime-local" id="endTime" required>
             </div>
             <div class="form-group">
-                <button type="submit" class="button submit">保存</button>
-                <button type="button" class="button cancel" onclick="location.href='index.html'">取消</button>
+                <label for="maxParticipants">最大参与人数</label>
+                <input type="number" id="maxParticipants" min="1" required>
+            </div>
+            <div class="button-group">
+                <button class="button primary" onclick="submitForm()">保存</button>
+                <button class="button default" onclick="goBack()">返回</button>
             </div>
         </form>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const activityId = urlParams.get('id');
-        const user = JSON.parse(localStorage.getItem('user'));
+        let activityId = null;
 
-        if (activityId) {
-            document.getElementById('formTitle').textContent = '编辑活动';
-            loadActivity(activityId);
+        // 页面加载时执行
+        window.onload = async function() {
+            // 获取活动分类
+            await loadCategories();
+            
+            // 检查是否是编辑模式
+            const urlParams = new URLSearchParams(window.location.search);
+            activityId = urlParams.get('id');
+            
+            if (activityId) {
+                await loadActivityData(activityId);
+            }
+        };
+
+        // 加载活动分类
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const categories = await response.json();
+                
+                const select = document.getElementById('category');
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载活动分类失败');
+            }
         }
 
-        async function loadActivity(id) {
+        // 加载活动数据（编辑模式）
+        async function loadActivityData(id) {
             try {
                 const response = await fetch(`/api/organizer/activities/${id}`);
                 const activity = await response.json();
                 
-                document.getElementById('activityId').value = activity.id;
                 document.getElementById('title').value = activity.title;
+                document.getElementById('category').value = activity.category.id;
                 document.getElementById('description').value = activity.description;
                 document.getElementById('location').value = activity.location;
                 document.getElementById('startTime').value = activity.startTime.slice(0, 16);
@@ -103,37 +148,44 @@
                 document.getElementById('maxParticipants').value = activity.maxParticipants;
             } catch (error) {
                 console.error('Error:', error);
-                alert('加载活动详情失败');
+                alert('加载活动数据失败');
             }
         }
 
-        document.getElementById('activityForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const activity = {
+        // 提交表单
+        async function submitForm() {
+            const formData = {
                 title: document.getElementById('title').value,
+                categoryId: document.getElementById('category').value,
                 description: document.getElementById('description').value,
                 location: document.getElementById('location').value,
                 startTime: document.getElementById('startTime').value,
                 endTime: document.getElementById('endTime').value,
-                maxParticipants: document.getElementById('maxParticipants').value,
-                organizerId: user.id
+                maxParticipants: document.getElementById('maxParticipants').value
             };
-            
-            const id = document.getElementById('activityId').value;
-            
+
+            // 验证结束时间是否大于开始时间
+            if (new Date(formData.endTime) <= new Date(formData.startTime)) {
+                alert('结束时间必须大于开始时间');
+                return;
+            }
+
             try {
-                const response = await fetch(`/api/organizer/activities${id ? `/${id}` : ''}`, {
-                    method: id ? 'PUT' : 'POST',
+                const url = activityId ? 
+                    `/api/organizer/activities/${activityId}` : 
+                    '/api/organizer/activities';
+                
+                const response = await fetch(url, {
+                    method: activityId ? 'PUT' : 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(activity)
+                    body: JSON.stringify(formData)
                 });
                 
                 if (response.ok) {
-                    alert('保存成功');
-                    location.href = 'index.html';
+                    alert(activityId ? '更新成功' : '创建成功');
+                    goBack();
                 } else {
                     const error = await response.json();
                     alert(error.message || '保存失败');
@@ -141,7 +193,12 @@
             } catch (error) {
                 alert('保存失败');
             }
-        });
+        }
+
+        // 返回活动列表
+        function goBack() {
+            window.parent.document.querySelector('iframe[name="mainFrame"]').src = 'activity-list.html';
+        }
     </script>
 </body>
 </html> 

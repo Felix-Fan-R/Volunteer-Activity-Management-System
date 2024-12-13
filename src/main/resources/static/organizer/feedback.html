@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>活动评价</title>
+    <style>
+        .container {
+            padding: 20px;
+        }
+        .activity-select {
+            margin-bottom: 20px;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .feedback-list {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .feedback-item {
+            padding: 20px;
+            border-bottom: 1px solid #EBEEF5;
+        }
+        .feedback-item:last-child {
+            border-bottom: none;
+        }
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .volunteer-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .feedback-time {
+            color: #909399;
+            font-size: 14px;
+        }
+        .rating {
+            color: #E6A23C;
+            margin-bottom: 10px;
+        }
+        .comment {
+            color: #666;
+            line-height: 1.6;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #909399;
+            font-size: 14px;
+        }
+        .stats {
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .stats-item {
+            display: inline-block;
+            margin-right: 40px;
+        }
+        .stats-label {
+            color: #909399;
+            font-size: 14px;
+        }
+        .stats-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="activity-select">
+            <select id="activitySelect" onchange="loadFeedback()">
+                <option value="">选择活动</option>
+            </select>
+        </div>
+        
+        <div class="stats" id="statsPanel" style="display: none;">
+            <div class="stats-item">
+                <div class="stats-label">评价总数</div>
+                <div class="stats-value" id="totalFeedback">0</div>
+            </div>
+            <div class="stats-item">
+                <div class="stats-label">平均评分</div>
+                <div class="stats-value" id="averageRating">0.0</div>
+            </div>
+        </div>
+
+        <div class="feedback-list" id="feedbackList"></div>
+    </div>
+
+    <script>
+        // 页面加载时获取活动列表
+        window.onload = async function() {
+            try {
+                const response = await fetch('/api/organizer/activities');
+                const activities = await response.json();
+                
+                const select = document.getElementById('activitySelect');
+                activities.forEach(activity => {
+                    if (activity.status === 'FINISHED') {
+                        const option = document.createElement('option');
+                        option.value = activity.id;
+                        option.textContent = activity.title;
+                        select.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载活动列表失败');
+            }
+        };
+
+        // 加载活动评价
+        async function loadFeedback() {
+            const activityId = document.getElementById('activitySelect').value;
+            if (!activityId) {
+                document.getElementById('feedbackList').innerHTML = '';
+                document.getElementById('statsPanel').style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/organizer/activities/${activityId}/feedback`);
+                const feedbackList = await response.json();
+                
+                // 显示统计信息
+                const stats = calculateStats(feedbackList);
+                document.getElementById('totalFeedback').textContent = stats.total;
+                document.getElementById('averageRating').textContent = stats.average.toFixed(1);
+                document.getElementById('statsPanel').style.display = 'block';
+
+                // 显示评价列表
+                if (feedbackList.length === 0) {
+                    document.getElementById('feedbackList').innerHTML = `
+                        <div class="empty-message">暂无评价</div>
+                    `;
+                    return;
+                }
+
+                const html = feedbackList.map(feedback => `
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <span class="volunteer-name">${feedback.volunteer.username}</span>
+                            <span class="feedback-time">${new Date(feedback.createTime).toLocaleString()}</span>
+                        </div>
+                        <div class="rating">
+                            ${'⭐'.repeat(feedback.rating)}
+                            <span style="color: #666;">(${feedback.rating}分)</span>
+                        </div>
+                        <div class="comment">${feedback.comment}</div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('feedbackList').innerHTML = html;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载评价失败');
+            }
+        }
+
+        // 计算统计信息
+        function calculateStats(feedbackList) {
+            if (feedbackList.length === 0) {
+                return { total: 0, average: 0 };
+            }
+
+            const total = feedbackList.length;
+            const sum = feedbackList.reduce((acc, curr) => acc + curr.rating, 0);
+            const average = sum / total;
+
+            return { total, average };
+        }
+    </script>
+</body>
+</html> 

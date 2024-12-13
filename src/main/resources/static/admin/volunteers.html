@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>志愿者管理</title>
+    <title>活动参与者管理</title>
     <style>
         .table {
             width: 100%;
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h2>志愿者管理</h2>
+    <h2>活动参与者管理</h2>
     <div id="volunteerList"></div>
 
     <script>
@@ -78,7 +78,7 @@
                 document.getElementById('volunteerList').innerHTML = table;
             } catch (error) {
                 console.error('Error:', error);
-                alert('加载志愿者列表失败');
+                alert('加载活动参与者列表失败');
             }
         }
 
@@ -116,7 +116,7 @@
             location.href = `volunteer-activities.html?id=${volunteerId}`;
         }
 
-        // 初始加载志愿者列表
+        // 初始加载活动参与者列表
         loadVolunteers();
     </script>
 </body>

@@ -15,7 +15,7 @@ import com.eco.volunteer.model.ActivityStatus;
 @Repository
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findByOrganizerId(Long organizerId);
-    List<Activity> findByStatus(ActivityStatus status);
+
     int countByOrganizerId(Long organizerId);
     List<Activity> findByStatusIn(Collection<ActivityStatus> statuses);
     

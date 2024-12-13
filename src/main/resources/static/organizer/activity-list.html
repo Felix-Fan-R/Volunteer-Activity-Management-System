@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>活动管理</title>
+    <style>
+        .container {
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .primary {
+            background: #409EFF;
+        }
+        .success {
+            background: #67C23A;
+        }
+        .warning {
+            background: #E6A23C;
+        }
+        .danger {
+            background: #F56C6C;
+        }
+        .activity-list {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .activity-card {
+            padding: 20px;
+            border-bottom: 1px solid #EBEEF5;
+        }
+        .activity-card:last-child {
+            border-bottom: none;
+        }
+        .activity-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .activity-info {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .activity-description {
+            margin-bottom: 15px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: white;
+        }
+        .draft { background: #909399; }
+        .pending { background: #E6A23C; }
+        .approved { background: #67C23A; }
+        .rejected { background: #F56C6C; }
+        .ongoing { background: #409EFF; }
+        .finished { background: #909399; }
+        .cancelled { background: #F56C6C; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>活动管理</h2>
+            <button class="button primary" onclick="createActivity()">发起活动</button>
+        </div>
+        <div id="debug" style="margin: 10px 0; padding: 10px; background: #f5f5f5; display: none;">
+            <pre id="debugInfo"></pre>
+        </div>
+        <div class="activity-list" id="activityList"></div>
+    </div>
+
+    <script>
+        // 调试信息显示函数
+        function showDebugInfo(info) {
+            const debugDiv = document.getElementById('debug');
+            const debugInfo = document.getElementById('debugInfo');
+            debugDiv.style.display = 'block';
+            debugInfo.textContent += JSON.stringify(info, null, 2) + '\n\n';
+        }
+
+        // 清除调试信息
+        function clearDebugInfo() {
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.textContent = '';
+        }
+
+        async function loadActivities() {
+            clearDebugInfo();
+            try {
+                // 获取用户信息
+                const userStr = localStorage.getItem('user');
+                showDebugInfo({ message: 'User Info from localStorage', data: userStr });
+
+                if (!userStr) {
+                    throw new Error('未登录');
+                }
+
+                let user;
+                try {
+                    user = JSON.parse(userStr);
+                    showDebugInfo({ message: 'Parsed User Info', data: user });
+                } catch (e) {
+                    localStorage.removeItem('user');
+                    throw new Error('登录信息无效');
+                }
+
+                if (!user || user.role !== 'ORGANIZER') {
+                    throw new Error('无权限访问');
+                }
+
+                const requestHeaders = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (user.token) {
+                    requestHeaders['Authorization'] = `Bearer ${user.token}`;
+                }
+
+                showDebugInfo({ message: 'Request Headers', data: requestHeaders });
+
+                const response = await fetch('/api/organizer/activities', {
+                    method: 'GET',
+                    headers: requestHeaders
+                });
+
+                showDebugInfo({ 
+                    message: 'Response Info', 
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries([...response.headers])
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('user');
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+
+                let responseData;
+                const responseText = await response.text();
+                showDebugInfo({ message: 'Response Text', data: responseText });
+
+                try {
+                    responseData = JSON.parse(responseText);
+                    showDebugInfo({ message: 'Parsed Response Data', data: responseData });
+                } catch (e) {
+                    throw new Error(`响应格式错误: ${responseText}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`请求失败: ${response.status} - ${responseData.message || '未知错误'}`);
+                }
+
+                // 确保data是一个数组
+                const activities = Array.isArray(responseData) ? responseData : 
+                                 (responseData.data || responseData.content || []);
+
+                showDebugInfo({ message: 'Processed Activities', data: activities });
+
+                if (activities.length === 0) {
+                    document.getElementById('activityList').innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: #909399;">
+                            暂无活动数据
+                            <button onclick="createActivity()" class="button primary" style="margin-left: 10px;">
+                                创建活动
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                document.getElementById('activityList').innerHTML = activities.map(activity => `
+                    <div class="activity-card">
+                        <div class="activity-title">
+                            ${activity.title || '未命名活动'}
+                            <span class="status ${(activity.status || '').toLowerCase()}">${getStatusText(activity.status)}</span>
+                        </div>
+                        <div class="activity-info">
+                            <p>类别：${activity.category ? activity.category.name : '未分类'}</p>
+                            <p>地点：${activity.location || '待定'}</p>
+                            <p>时间：${activity.startTime ? new Date(activity.startTime).toLocaleString() : '待定'} - ${activity.endTime ? new Date(activity.endTime).toLocaleString() : '待定'}</p>
+                            <p>参与人数：${activity.currentParticipants || 0}/${activity.maxParticipants || 0}</p>
+                        </div>
+                        <div class="activity-description">${activity.description || '暂无描述'}</div>
+                        <div class="activity-actions">
+                            ${getActionButtons(activity)}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                showDebugInfo({ message: 'Error', error: error.message });
+
+                const errorMessage = error.message || '未知错误';
+                
+                if (errorMessage.includes('未登录') || errorMessage.includes('登录信息无效') || errorMessage.includes('无权限访问')) {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+
+                document.getElementById('activityList').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #F56C6C;">
+                        <div style="margin-bottom: 10px;">加载失败：${errorMessage}</div>
+                        <button onclick="loadActivities()" class="button primary">重试</button>
+                        <button onclick="window.parent.location.href='/login.html'" class="button default" style="margin-left: 10px;">重新登录</button>
+                    </div>
+                `;
+            }
+        }
+
+        function createActivity() {
+            window.parent.document.querySelector('iframe[name="mainFrame"]').src = 'activity-form.html';
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'DRAFT': '草稿',
+                'PENDING': '待审核',
+                'APPROVED': '已通过',
+                'REJECTED': '已拒绝',
+                'ONGOING': '进行中',
+                'FINISHED': '已结束',
+                'CANCELLED': '已取消'
+            };
+            return statusMap[status] || status || '未知状态';
+        }
+
+        function getActionButtons(activity) {
+            if (!activity) return '';
+            
+            const buttons = [];
+            const status = activity.status || '';
+            
+            try {
+                switch(status.toUpperCase()) {
+                    case 'DRAFT':
+                        buttons.push(`<button class="button primary" onclick="editActivity(${activity.id})">编辑</button>`);
+                        buttons.push(`<button class="button success" onclick="submitActivity(${activity.id})">提交审核</button>`);
+                        buttons.push(`<button class="button danger" onclick="deleteActivity(${activity.id})">删除</button>`);
+                        break;
+                    case 'PENDING':
+                        buttons.push(`<button class="button warning" onclick="cancelActivity(${activity.id})">撤回</button>`);
+                        break;
+                    case 'APPROVED':
+                        buttons.push(`<button class="button success" onclick="startActivity(${activity.id})">开始活动</button>`);
+                        buttons.push(`<button class="button warning" onclick="cancelActivity(${activity.id})">取消活动</button>`);
+                        break;
+                    case 'ONGOING':
+                        buttons.push(`<button class="button primary" onclick="viewRegistrations(${activity.id})">查看报名</button>`);
+                        buttons.push(`<button class="button success" onclick="finishActivity(${activity.id})">结束活动</button>`);
+                        break;
+                    case 'FINISHED':
+                        buttons.push(`<button class="button primary" onclick="viewFeedback(${activity.id})">查看评价</button>`);
+                        break;
+                }
+            } catch (error) {
+                console.error('Error in getActionButtons:', error);
+            }
+            
+            return buttons.join(' ');
+        }
+
+        async function submitActivity(id) {
+            if (!confirm('确定要提交审核吗？')) return;
+            await updateActivityStatus(id, 'PENDING', '提交审核');
+        }
+
+        async function startActivity(id) {
+            if (!confirm('确定要开始活动吗？')) return;
+            await updateActivityStatus(id, 'ONGOING', '开始活动');
+        }
+
+        async function finishActivity(id) {
+            if (!confirm('确定要结束活动吗？')) return;
+            await updateActivityStatus(id, 'FINISHED', '结束活动');
+        }
+
+        async function cancelActivity(id) {
+            if (!confirm('确定要取消活动吗？')) return;
+            await updateActivityStatus(id, 'CANCELLED', '取消活动');
+        }
+
+        async function updateActivityStatus(id, status, action) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.role !== 'ORGANIZER') {
+                    throw new Error('请先登录');
+                }
+
+                const response = await fetch(`/api/organizer/activities/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': user.token ? `Bearer ${user.token}` : ''
+                    },
+                    body: JSON.stringify(status)
+                });
+                
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('user');
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`请求失败: ${response.status}`);
+                }
+                
+                alert(`${action}成功`);
+                await loadActivities();
+            } catch (error) {
+                console.error('Error:', error);
+                if (error.message === '请先登录') {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                alert(`${action}失败: ${error.message}`);
+            }
+        }
+
+        function editActivity(id) {
+            window.parent.document.querySelector('iframe[name="mainFrame"]').src = `activity-form.html?id=${id}`;
+        }
+
+        function viewRegistrations(id) {
+            window.parent.document.querySelector('iframe[name="mainFrame"]').src = `registrations.html?id=${id}`;
+        }
+
+        function viewFeedback(id) {
+            window.parent.document.querySelector('iframe[name="mainFrame"]').src = `feedback.html?id=${id}`;
+        }
+
+        async function deleteActivity(id) {
+            if (!confirm('确定要删除这个活动吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/organizer/activities/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('删除成功');
+                    await loadActivities();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '删除失败');
+                }
+            } catch (error) {
+                alert('删除失败');
+            }
+        }
+
+        // 检查用户登录状态
+        function checkAuth() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'ORGANIZER') {
+                window.parent.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 开发环境下显示调试信息
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                document.getElementById('debug').style.display = 'block';
+            }
+            loadActivities();
+        });
+    </script>
+</body>
+</html> 

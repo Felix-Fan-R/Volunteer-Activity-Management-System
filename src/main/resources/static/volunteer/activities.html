@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>可报名活动</title>
+    <style>
+        .activity-list {
+            padding: 20px;
+        }
+        .activity-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        .activity-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .activity-info {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .activity-description {
+            margin-bottom: 15px;
+        }
+        .button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .primary {
+            background: #409EFF;
+            color: white;
+        }
+        .disabled {
+            background: #909399;
+            color: white;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="activity-list" id="activityList"></div>
+
+    <script>
+        async function loadActivities() {
+            try {
+                const response = await fetch('/api/volunteer/activities');
+                const activities = await response.json();
+                
+                const html = activities.map(activity => `
+                    <div class="activity-card">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-info">
+                            <p>类别：${activity.category.name}</p>
+                            <p>地点：${activity.location}</p>
+                            <p>时间：${new Date(activity.startTime).toLocaleString()} - ${new Date(activity.endTime).toLocaleString()}</p>
+                            <p>组织者：${activity.organizer.username}</p>
+                            <p>参与人数：${activity.currentParticipants}/${activity.maxParticipants}</p>
+                        </div>
+                        <div class="activity-description">${activity.description}</div>
+                        <button 
+                            class="button ${activity.currentParticipants >= activity.maxParticipants ? 'disabled' : 'primary'}"
+                            onclick="register(${activity.id})"
+                            ${activity.currentParticipants >= activity.maxParticipants ? 'disabled' : ''}
+                        >
+                            ${activity.currentParticipants >= activity.maxParticipants ? '人数已满' : '立即报名'}
+                        </button>
+                    </div>
+                `).join('');
+                
+                document.getElementById('activityList').innerHTML = html;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载活动列表失败');
+            }
+        }
+
+        async function register(activityId) {
+            try {
+                const response = await fetch(`/api/volunteer/activities/${activityId}/register`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('报名成功，请等待审核');
+                    loadActivities();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '报名失败');
+                }
+            } catch (error) {
+                alert('报名失败');
+            }
+        }
+
+        // 初始加载活动列表
+        loadActivities();
+    </script>
+</body>
+</html> 
